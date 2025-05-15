@@ -1,0 +1,487 @@
+{
+  "type": "FeatureCollection",
+  "generator": "overpass-turbo",
+  "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL.",
+  "timestamp": "2025-05-15T10:16:52Z",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2032447256",
+        "addr:city": "Waalre",
+        "addr:housenumber": "27",
+        "addr:postcode": "5581VB",
+        "addr:street": "Heikantstraat",
+        "amenity": "restaurant",
+        "name": "Wokwereld",
+        "source": "BAG",
+        "source:date": "2014-06-24",
+        "website": "http://www.wokwereld.com"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.4466862,
+          51.374154
+        ]
+      },
+      "id": "node/2032447256"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2216737424",
+        "addr:city": "Waalre",
+        "addr:housenumber": "102",
+        "addr:postcode": "5582HK",
+        "addr:street": "Gestelsestraat",
+        "amenity": "restaurant",
+        "contact:phone": "+31 40 221 5406",
+        "name": "De Leemer Hoef",
+        "opening_hours": "We-Su 12:00-00:00",
+        "source": "BAG",
+        "source:date": "2014-06-23",
+        "website": "https://www.leemerhoef.nl/"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.4743028,
+          51.4049083
+        ]
+      },
+      "id": "node/2216737424"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2575760959",
+        "addr:city": "Waalre",
+        "addr:housenumber": "12",
+        "addr:postcode": "5582CL",
+        "addr:street": "Hortensialaan",
+        "amenity": "restaurant",
+        "cuisine": "pizza",
+        "name": "Sint Maria",
+        "opening_hours": "Tu-Su 15:00-23:00",
+        "phone": "+31 40 221 3650",
+        "source": "local knowledge",
+        "website": "https://www.sintmaria.nl"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.4698911,
+          51.4000675
+        ]
+      },
+      "id": "node/2575760959"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2575760977",
+        "addr:city": "Waalre",
+        "addr:housenumber": "10",
+        "addr:postcode": "5582CL",
+        "addr:street": "Hortensialaan",
+        "amenity": "restaurant",
+        "cuisine": "chinese",
+        "name": "Lotus Garden",
+        "opening_hours": "Mo 16:00-21:00; Tu-Su 12:00-22:00",
+        "phone": "+31 40 221 3989",
+        "source": "local knowledge",
+        "source:date": "2015-01-11",
+        "website": "https://www.lotusgardenwaalre.nl/"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.4696927,
+          51.4002063
+        ]
+      },
+      "id": "node/2575760977"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2929768299",
+        "addr:city": "Waalre",
+        "addr:housenumber": "48",
+        "addr:postcode": "5582HT",
+        "addr:street": "Eindhovenseweg",
+        "amenity": "restaurant",
+        "cuisine": "kebab;italian_pizza;greek;turkish",
+        "description": "Turkse en Italiaanse Eethuis",
+        "name": "Mimo's",
+        "opening_hours": "Su-Th 16:00-22:45; Fr-Sa 16:00-23:45",
+        "phone": "+31 40 785 0918",
+        "source": "BAG",
+        "source:date": "2014-06-23",
+        "website": "https://www.mimo-s.nl"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.4765836,
+          51.3950237
+        ]
+      },
+      "id": "node/2929768299"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2929768973",
+        "addr:city": "Waalre",
+        "addr:housenumber": "50",
+        "addr:postcode": "5582HT",
+        "addr:street": "Eindhovenseweg",
+        "amenity": "restaurant",
+        "cuisine": "indonesian",
+        "delivery": "yes",
+        "name": "Rumah Makan",
+        "opening_hours": "We-Su 15:30-21:00",
+        "phone": "+31 40 8422256",
+        "source": "BAG",
+        "source:date": "2014-06-23",
+        "takeaway": "yes",
+        "website": "https://rumahmakan.eu"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.4766261,
+          51.3951034
+        ]
+      },
+      "id": "node/2929768973"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2929819212",
+        "addr:city": "Waalre",
+        "addr:housenumber": "134",
+        "addr:postcode": "5582JZ",
+        "addr:street": "Den Hof",
+        "amenity": "restaurant",
+        "cuisine": "greek",
+        "name": "Grieks Restaurant OLYMPIA",
+        "name:en": "Greet Restaurant OLYMPIA",
+        "name:nl": "Grieks Restaurant OLYMPIA",
+        "opening_hours": "Tu-Sa 17:00-22:00; Su 16:00-21:30",
+        "phone": "+31 40 222 0501",
+        "source": "BAG",
+        "source:date": "2014-06-23",
+        "website": "https://www.olympiawaalre.nl"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.476427,
+          51.3957877
+        ]
+      },
+      "id": "node/2929819212"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2929819571",
+        "addr:city": "Waalre",
+        "addr:housenumber": "14",
+        "addr:postcode": "5582VB",
+        "addr:street": "Valkenswaardseweg",
+        "amenity": "restaurant",
+        "name": "De Treeswijkhoeve",
+        "source": "BAG",
+        "source:date": "2014-06-23"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.467041,
+          51.3727628
+        ]
+      },
+      "id": "node/2929819571"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2929820231",
+        "addr:city": "Waalre",
+        "addr:housenumber": "150",
+        "addr:postcode": "5582JZ",
+        "addr:street": "Den Hof",
+        "amenity": "restaurant",
+        "cuisine": "chinese",
+        "name": "Mr.Chang",
+        "opening_hours": "We-Mo 16:00-22:00",
+        "phone": "+31 40 221 7268",
+        "source": "BAG",
+        "source:date": "2014-06-23",
+        "website": "https://www.mrchang.nl/"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.4757238,
+          51.3956572
+        ]
+      },
+      "id": "node/2929820231"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2929821370",
+        "addr:city": "Waalre",
+        "addr:housenumber": "2",
+        "addr:postcode": "5582HH",
+        "addr:street": "Gestelsestraat",
+        "amenity": "restaurant",
+        "name": "Lugar",
+        "opening_hours": "Mo-Fr 12:00+; Sa 17:00+",
+        "phone": "+31 40 221 8989",
+        "source": "BAG",
+        "source:date": "2014-06-23",
+        "website": "https://www.lugar.nl/"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.4770373,
+          51.3975153
+        ]
+      },
+      "id": "node/2929821370"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2929829590",
+        "addr:city": "Waalre",
+        "addr:housenumber": "7",
+        "addr:postcode": "5582JZ",
+        "addr:street": "Den Hof",
+        "amenity": "restaurant",
+        "name": "Lunchroom Den Hof",
+        "source": "BAG",
+        "source:date": "2014-06-23"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.4752834,
+          51.3953843
+        ]
+      },
+      "id": "node/2929829590"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2929832758",
+        "addr:city": "Waalre",
+        "addr:housenumber": "98",
+        "addr:postcode": "5582JZ",
+        "addr:street": "Den Hof",
+        "amenity": "restaurant",
+        "name": "Brasserie Hoom",
+        "opening_hours": "Oct-Jul Mo-Sa 11:00-21:00; Aug,Sep Tu-Sa 11:00-21:00; Su 12:00-17:00",
+        "phone": "+31 40 222 3003",
+        "source": "BAG",
+        "source:date": "2014-06-23",
+        "website": "https://www.brasseriehoom.nl"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.4761584,
+          51.3952125
+        ]
+      },
+      "id": "node/2929832758"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2930059364",
+        "addr:city": "Waalre",
+        "addr:housenumber": "137a",
+        "addr:postcode": "5581GD",
+        "addr:street": "Willibrorduslaan",
+        "amenity": "restaurant",
+        "contact:email": "info@stations-koffiehuis.nl",
+        "contact:phone": "+31 40 221 7634",
+        "contact:website": "https://stations-koffiehuis.nl",
+        "name": "Brasserie 't Stationskoffiehuis",
+        "opening_hours": "Tu-Fr 12:00-00:00; Sa 15:00-00:00; Su 10:30-21:00",
+        "phone": "+31 40 221 7634",
+        "source": "BAG",
+        "source:date": "2014-06-23",
+        "website": "https://stations-koffiehuis.nl"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.4599184,
+          51.3920096
+        ]
+      },
+      "id": "node/2930059364"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2931187681",
+        "addr:city": "Waalre",
+        "addr:housenumber": "18",
+        "addr:postcode": "5581GK",
+        "addr:street": "Markt",
+        "amenity": "restaurant",
+        "name": "De Doelen",
+        "phone": "+31 40 22 125 79",
+        "source": "BAG",
+        "source:date": "2014-06-24",
+        "website": "https://www.restaurantzaaldedoelen.nl/"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.4427398,
+          51.38664
+        ]
+      },
+      "id": "node/2931187681"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2931188278",
+        "addr:city": "Waalre",
+        "addr:housenumber": "21",
+        "addr:postcode": "5581GK",
+        "addr:street": "Markt",
+        "amenity": "restaurant",
+        "name": "Meester Keeman",
+        "phone": "+31 40 7601999",
+        "source": "BAG",
+        "source:date": "2014-06-24",
+        "website": "https://www.meesterkeeman.nl/"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.4432262,
+          51.3868674
+        ]
+      },
+      "id": "node/2931188278"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2931191127",
+        "addr:city": "Waalre",
+        "addr:housenumber": "6",
+        "addr:postcode": "5581BJ",
+        "addr:street": "Oude Torenstraat",
+        "amenity": "restaurant",
+        "name": "De Oude Toren",
+        "opening_hours": "We,Th 15:00-22:00; Fr-Su 12:00-22:00",
+        "phone": "+31 40 221 4930",
+        "source": "BAG",
+        "source:date": "2014-06-24",
+        "website": "https://oudetoren.nl"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.4418043,
+          51.3874313
+        ]
+      },
+      "id": "node/2931191127"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2931349379",
+        "addr:city": "Waalre",
+        "addr:housenumber": "14",
+        "addr:postcode": "5581GE",
+        "addr:street": "Willibrorduslaan",
+        "amenity": "restaurant",
+        "lunch": "yes",
+        "name": "Winkelcafe Carpe Diem",
+        "source": "BAG",
+        "source:date": "2014-06-24",
+        "website": "https://winkelcafecarpediem.nl/"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.4461765,
+          51.3863762
+        ]
+      },
+      "id": "node/2931349379"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2931351027",
+        "addr:city": "Waalre",
+        "addr:housenumber": "44",
+        "addr:postcode": "5581VG",
+        "addr:street": "Loonderweg",
+        "amenity": "restaurant",
+        "cuisine": "regional",
+        "email": "info@herbergh-t-loon.nl",
+        "name": "Café Herbergh 't Loon",
+        "opening_hours": "Tu-Su 12:00-21:00",
+        "outdoor_seating": "yes",
+        "phone": "+31 40 221 2508",
+        "smoking": "outside",
+        "source": "BAG",
+        "source:date": "2014-06-24",
+        "website": "https://www.herbergtloon.nl/"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.4425828,
+          51.3800239
+        ]
+      },
+      "id": "node/2931351027"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2931391279",
+        "addr:city": "Waalre",
+        "addr:housenumber": "23",
+        "addr:postcode": "5581VB",
+        "addr:street": "Heikantstraat",
+        "amenity": "restaurant",
+        "name": "Het Brabants Genot",
+        "source": "BAG",
+        "source:date": "2014-06-24",
+        "website": "https://brabantsgenot.nl/"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.447585,
+          51.3750832
+        ]
+      },
+      "id": "node/2931391279"
+    }
+  ]
+}
