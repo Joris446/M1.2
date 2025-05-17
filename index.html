@@ -316,8 +316,8 @@
     async function speakWeatherIfQuiet() {
       const now = Date.now();
       if (!weatherData) return;
-      // Only speak weather if at least 2 directions have been given
-      if (directionCount < 2) return;
+      // --- Remove this line to allow weather at any time ---
+      // if (directionCount < 2) return;
       // Only if nothing spoken for 10s, and not just after weather, and only once
       if (!weatherSentenceSpoken && now - lastSpokenTime > 10000 && now - lastWeatherAnnounceTime > 10000) {
         const zin = getWeatherSentence(weatherData);
@@ -725,15 +725,8 @@
       if (window.weatherInterval) clearInterval(window.weatherInterval);
       window.weatherInterval = setInterval(speakWeatherIfQuiet, 1000);
 
-      // --- Opening sentence after 5 seconds ---
-      blockDirectionsUntil = Date.now() + 5000; // Block directions for 5s after opening
-      lastObjectAnnounceTime = Date.now(); // Block objects for 5s after opening
-      setTimeout(() => {
-        speak("Hallo, ik ben Gerard. Vandaag loop ik gezellig met je mee. Ik laat je weten waneer we een afslag moeten nemen om weer terug bij het Klooster te komen. Heb je zin om een stukje te wandelen?");
-        // Block directions for the duration of the opening sentence (estimate 7s)
-        blockDirectionsUntil = Date.now() + 7000;
-        lastObjectAnnounceTime = Date.now();
-      }, 5000);
+      // --- Remove duplicate opening sentence here ---
+      // (No speak or setTimeout for "Hallo, ik ben Gerard..." here)
     }
 
     function onKeyMove(e) {
