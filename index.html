@@ -157,6 +157,12 @@
       document.getElementById('routeScreen').style.display = 'none';
       document.getElementById('map').style.display = 'block';
       startSimulation(type);
+      setTimeout(() => {
+        speak("Hallo, ik ben Gerard. Vandaag loop ik gezellig met je mee. Ik laat je weten waneer we een afslag moeten nemen om weer terug bij het Klooster te komen. Heb je zin om een stukje te wandelen?");
+        // Block directions for the duration of the opening sentence (estimate 7s)
+        blockDirectionsUntil = Date.now() + 7000;
+        lastObjectAnnounceTime = Date.now();
+      }, 5000);
     }
 
     // --- Map and Data ---
