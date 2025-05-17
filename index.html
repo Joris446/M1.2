@@ -5,27 +5,82 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <style>
+    @font-face {
+      font-family: 'Arial';
+      src: local('Arial'), local('BodoniMT'), url('https://fonts.cdnfonts.com/s/17309/BodoniMT.woff') format('woff');
+      font-weight: normal;
+      font-style: normal;
+    }
+    :root {
+      --background: #fefef2;
+      --primary: #014b9b;
+      --highlight: #e1a83e;
+      --text: #0f0f0f;
+      --card-bg: #fff;
+      --card-border: #e1a83e;
+      --shadow: 0 2px 8px rgba(1, 75, 155, 0.04);
+    }
     html, body { height: 100%; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; }
+    body {
+      font-family: 'Arial', serif;
+      background: var(--background);
+      color: var(--text);
+      min-height: 100vh;
+    }
     #map { height: 100vh; display: none; }
     .center-screen {
       position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-      background: #fff; display: flex; flex-direction: column;
+      background: var(--background); display: flex; flex-direction: column;
       align-items: center; justify-content: center; z-index: 10;
     }
-    .welcome-title { font-size: 3em; font-weight: bold; margin-bottom: 0.5em; }
-    .welcome-question { font-size: 1.5em; margin-bottom: 2em; }
+    .welcome-title {
+      font-size: 3em; font-weight: bold; margin-bottom: 0.5em;
+      color: var(--primary);
+      letter-spacing: 1px;
+      font-family: 'Segoe UI', Arial, sans-serif; /* Not Arial for Hey daar! */
+    }
+    .welcome-question {
+      font-size: 1.5em; margin-bottom: 2em;
+      color: var(--text);
+      opacity: 0.85;
+    }
     .start-btn, .route-btn {
       padding: 0.8em 2em; font-size: 1.2em; border: none; border-radius: 8px;
-      background: #0078d7; color: #fff; cursor: pointer; margin: 0.5em 0;
-      transition: background 0.2s;
+      background: var(--primary); color: #fff; cursor: pointer; margin: 0.5em 0;
+      transition: background 0.2s, box-shadow 0.2s, color 0.2s;
+      box-shadow: var(--shadow);
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: lowercase;
+      font-family: 'Arial', serif;
     }
-    .start-btn:hover, .route-btn:hover { background: #005fa3; }
-    .route-options { display: flex; flex-direction: column; align-items: center; }
+    .start-btn:hover, .route-btn:hover {
+      background: var(--highlight);
+      color: #fff; /* Keep text white on hover */
+    }
+    .route-options {
+      display: flex; flex-direction: column; align-items: center;
+    }
     .route-option {
-      background: #f5f5f5; border-radius: 10px; padding: 1.2em 2em;
-      margin: 0.7em 0; width: 320px; text-align: center; font-size: 1.2em;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      background: var(--card-bg);
+      border-radius: 10px;
+      padding: 1.2em 2em;
+      margin: 0.7em 0;
+      width: 320px;
+      text-align: center;
+      font-size: 1.2em;
+      box-shadow: var(--shadow);
+      border: none; /* No border by default */
+      color: var(--text); /* Dark grey text */
+      font-weight: 500;
+      transition: border 0.2s, background 0.2s;
+      cursor: pointer;
+      font-family: 'Arial', serif;
+    }
+    .route-option:hover {
+      border: 2px solid var(--highlight); /* yellow border on hover */
+      background: #f8f8f8;
+      color: var(--text); /* Keep text dark grey on hover */
     }
     @media (max-width: 600px) {
       .route-option { width: 90vw; }
@@ -33,21 +88,47 @@
       .welcome-question { font-size: 1.1em; }
     }
     .user-dot {
-      width: 12px; height: 12px; background-color: blue;
-      border-radius: 50%; border: 2px solid white;
+      width: 16px; height: 16px;
+      background-color: var(--primary);
+      border-radius: 50%;
+      border: 3px solid #fff;
+      /* No yellow shadow */
+      box-shadow: none;
+    }
+    .leaflet-popup-content-wrapper {
+      border-radius: 10px;
+      border: 2px solid var(--highlight);
+      background: #fffbe7;
+      color: var(--text);
+      font-size: 1.1em;
+      font-weight: 500;
+      font-family: 'Arial', serif;
+    }
+    .leaflet-popup-tip {
+      background: var(--highlight);
+    }
+    #endScreen .start-btn {
+      margin-top: 2em;
+    }
+    #endScreen .start-btn:hover {
+      color: #fff; /* Keep text white on hover */
+    }
+    #endScreen {
+      font-family: 'Arial', serif;
     }
   </style>
 </head>
 <body>
   <!-- Welcome Screen -->
   <div id="welcomeScreen" class="center-screen">
-    <div class="welcome-title">Welkom</div>
+    <div class="welcome-title">Hey daar!</div>
     <div class="welcome-question">Klaar om een rondje te gaan lopen?</div>
-    <button class="start-btn" onclick="showRouteScreen()">Start</button>
+    <button class="start-btn" onclick="showRouteScreen()">start</button>
   </div>
 
   <!-- Route Selection Screen -->
   <div id="routeScreen" class="center-screen" style="display:none;">
+    <div class="welcome-title" style="margin-bottom:0.4em;">Kies een route:</div>
     <div class="route-options">
       <div class="route-option" onclick="selectRoute('kort')">
         <b>Frisse neus halen</b> <br>(400 m)
@@ -56,7 +137,7 @@
         <b>De benen strekken</b> <br>(800 m)
       </div>
       <div class="route-option" onclick="selectRoute('lang')">
-        <b>Even eruit</b> <br>(2 km)
+        <b>Even eruit</b> <br>(1500 m)
       </div>
     </div>
   </div>
@@ -94,8 +175,15 @@
     let lastWeatherAnnounceTime = 0;
     let weatherSentenceSpoken = false; // Add this at the top with other state variables
 
-    // GeoWatch state
-    let geoWatchId = null; // Add this variable at the top with other state variables
+    // Off-route warning state
+    let offRouteWarned = false;
+
+    // Previous user position
+    let previousUserPosition = null;
+
+    // Direction and encouragement state
+    let directionCount = 0;
+    let encouragementGiven = false;
 
     // 🗣️ Vooraf ingestelde zinnen per objecttype
     const objectZinnen = {
@@ -116,7 +204,7 @@
       lastSpokenTime = Date.now();
       const utterance = new SpeechSynthesisUtterance(text);
       speechSynthesis.speak(utterance);
-     // speakWithElevenLabs(text); // gebruik nu ElevenLabs i.p.v. SpeechSynthesis
+      //speakWithElevenLabs(text); // gebruik nu ElevenLabs i.p.v. SpeechSynthesis
       if (map) {
         const popup = L.popup()
           .setLatLng([userPosition[0], userPosition[1]])
@@ -222,6 +310,8 @@
     async function speakWeatherIfQuiet() {
       const now = Date.now();
       if (!weatherData) return;
+      // Only speak weather if at least 2 directions have been given
+      if (directionCount < 2) return;
       // Only if nothing spoken for 10s, and not just after weather, and only once
       if (!weatherSentenceSpoken && now - lastSpokenTime > 10000 && now - lastWeatherAnnounceTime > 10000) {
         const zin = getWeatherSentence(weatherData);
@@ -265,7 +355,6 @@
   const audio = new Audio(audioUrl);
   audio.play();
 }
-
 
     async function fetchRealWorldRoute(waypoints) {
       // If there are less than 3 points, just return as is
@@ -366,6 +455,7 @@
         if (dir === "rechts") return "Laten we hier rechtsaf slaan.";
         if (dir === "links") return "Hier gaan we naar links.";
         if (dir === "rechtdoor") return "Hier blijven we rechtdoor gaan.";
+        if (dir === "plein") return "Laten we hier rechtsaf het plein op gaan en langs de kerk lopen";
         return `Hier moet je naar ${dir}`;
       }
 
@@ -381,6 +471,18 @@
           speak(getTurnSentence(turn.dir));
           turn.announced = true;
           lastDirectionAnnounceTime = Date.now();
+          directionCount++;
+          // After 3 directions, trigger encouragement if not yet given
+          if (directionCount >= 3 && !encouragementGiven) {
+            setTimeout(() => {
+              speak("Je bent goed bezig. Het is zo belangrijk om in beweging te blijven.");
+              encouragementGiven = true;
+              blockDirectionsUntil = Date.now() + 5000; // Block directions for 5s
+              lastObjectAnnounceTime = Date.now(); // Block objects for 5s
+            }, 5000); // Wait 5s after direction
+          }
+          blockDirectionsUntil = Date.now() + 5000; // Block directions for 5s
+          lastObjectAnnounceTime = Date.now(); // Block objects for 5s
           return;
         }
       }
@@ -396,6 +498,17 @@
           speak(getTurnSentence(lastRechts.dir));
           lastRechts.announced = true;
           lastDirectionAnnounceTime = Date.now();
+          directionCount++;
+          if (directionCount >= 3 && !encouragementGiven) {
+            setTimeout(() => {
+              speak("Je bent goed bezig. Het is zo belangrijk om in beweging te blijven.");
+              encouragementGiven = true;
+              blockDirectionsUntil = Date.now() + 5000;
+              lastObjectAnnounceTime = Date.now();
+            }, 5000);
+          }
+          blockDirectionsUntil = Date.now() + 5000;
+          lastObjectAnnounceTime = Date.now();
           return;
         }
       }
@@ -420,6 +533,47 @@
         }
       }
     }
+
+    function checkOffRoute(userCoords, routeCoords) {
+  if (!routeCoords || routeCoords.length === 0) return;
+
+  // Create a LineString from the route coordinates
+  const line = turf.lineString(routeCoords);
+
+  // User's current position as a Point
+  const userPoint = turf.point([userCoords[1], userCoords[0]]);
+
+  // Calculate the shortest distance from the user to the route line (in meters)
+  const minDist = turf.pointToLineDistance(userPoint, line, { units: 'meters' });
+
+  // First warning at >20m
+  if (minDist > 20 && minDist <= 40 && !offRouteWarned) {
+    speak("Oh, we moeten even omkeren om op de juiste route te komen. Dan zitten we weer goed.");
+    offRouteWarned = true;
+    blockDirectionsUntil = Date.now() + 4000;
+    lastObjectAnnounceTime = Date.now();
+  }
+  // Second warning at >40m
+  if (minDist > 40 && offRouteWarned !== "second") {
+    speak("Kom, laten we nu omkeren. Dan lopen we weer even terug naar het juiste pad");
+    offRouteWarned = "second";
+    blockDirectionsUntil = Date.now() + 4000;
+    lastObjectAnnounceTime = Date.now();
+  }
+  // Reset warning if user is back on route
+  if (minDist <= 10 && offRouteWarned) {
+    offRouteWarned = false;
+    // Announce dynamic direction to next point
+    const dir = getDynamicTurnInstruction(userCoords, previousUserPosition, routeCoords);
+    if (dir) {
+      if (dir === "rechts") speak("We zijn weer op de route. Hier gaan we naar rechts.");
+      else if (dir === "links") speak("En we zijn weer op het juiste pad. Hier gaan we naar links.");
+      else speak("We zijn weer op de route. Laten we hier rechtdoor gaan.");
+    } else {
+      speak("We zijn weer op de route.");
+    }
+  }
+}
 
     // --- Route Guidance ---
     function getNextRouteIndex(pos, coords, currentIdx) {
@@ -459,9 +613,7 @@
     // Fill in the coordinates and directions for your routes!
     const turnPointsByRoute = {
       kort: [
-        // Example: { lat: 51.3867, lng: 5.4441, dir: "links" }
-        // Add your real turn points here
-        { lat: 51.387481, lng: 5.443403, dir: "rechts" },
+        { lat: 51.387518, lng: 5.443264, dir: "rechts" },
         { lat: 51.387714, lng: 5.443246, dir: "links" },
         { lat: 51.387627, lng: 5.441539, dir: "links" },
         { lat: 51.387028, lng: 5.441920, dir: "rechtdoor" },
@@ -473,12 +625,42 @@
 
       ],
       middel: [
-        { lat: 51.3870, lng: 5.4450, dir: "links" },
-        { lat: 51.3872, lng: 5.4453, dir: "rechts" }
+        { lat: 51.387518, lng: 5.443264, dir: "links" },
+        { lat: 51.387088, lng: 5.443431, dir: "links" },
+          { lat: 51.387303, lng: 5.444765, dir: "rechtdoor" },
+         { lat: 51.387494, lng: 5.445949, dir: "rechts" },
+          { lat: 51.387212, lng: 5.446041, dir: "rechts" },
+           { lat: 51.387142, lng: 5.445778, dir: "links" },
+           { lat: 51.386524, lng: 5.446117, dir: "rechts" },
+          { lat: 51.386390, lng: 5.445628, dir: "rechtdoor" },
+           { lat: 51.386243, lng: 5.444643, dir: "rechtdoor" },
+           { lat: 51.386168, lng: 5.444415, dir: "plein" },
+           { lat: 51.386405, lng: 5.443573, dir: "rechts" },
+            { lat: 51.387083, lng: 5.443449, dir: "rechtdoor" },
+             { lat: 51.387481, lng: 5.443403, dir: "rechts" },
+        { lat: 51.387536, lng: 5.443614, dir: "Weer terug" },
       ],
       lang: [
-        { lat: 51.3880, lng: 5.4460, dir: "links" },
-        { lat: 51.3882, lng: 5.4463, dir: "rechts" }
+        { lat: 51.387518, lng: 5.443264, dir: "rechts" },
+        { lat: 51.387714, lng: 5.443246, dir: "links" },
+        { lat: 51.387627, lng: 5.441539, dir: "rechtdoor" },
+          { lat: 51.387604, lng: 5.440893, dir: "rechtdoor" },
+        { lat: 51.387821, lng: 5.439224, dir: "links" },
+        { lat: 51.387288, lng: 5.439156, dir: "rechts" },
+           { lat: 51.387023, lng: 5.437679, dir: "links" },
+        { lat: 51.386938, lng: 5.437711, dir: "rechtdoor" },
+        { lat: 51.386385, lng: 5.437822, dir: "rechtdoor" },
+             { lat: 51.385760, lng: 5.438039, dir: "links" },
+        { lat: 51.385849, lng: 5.438430, dir: "rechtdoor" },
+        { lat: 51.386117, lng: 5.439493, dir: "rechtdoor" },
+              { lat: 51.386412, lng: 5.441286, dir: "links" },
+        { lat: 51.386877, lng: 5.441175, dir: "rechts" },
+        { lat: 51.387028, lng: 5.441920, dir: "rechts" },
+        { lat: 51.386585, lng: 5.443084, dir: "links" },
+        { lat: 51.386609, lng: 5.443492, dir: "links" },
+        { lat: 51.387121, lng: 5.443417, dir: "rechtdoor" },
+        { lat: 51.387501, lng: 5.443296, dir: "rechts" },
+        { lat: 51.387536, lng: 5.443614, dir: "Weer terug" },
       ]
     };
 
@@ -508,7 +690,11 @@
 
       // Draw route
       if (routeLine) map.removeLayer(routeLine);
-      routeLine = L.polyline(routeCoords.map(c => [c[1], c[0]]), { color: 'red', weight: 5 }).addTo(map);
+      routeLine = L.polyline(routeCoords.map(c => [c[1], c[0]]), {
+        color: "#e1a83e", // yellow highlight
+        weight: 6,
+        opacity: 0.95
+      }).addTo(map);
       map.fitBounds(routeLine.getBounds());
 
       // Place user at start
@@ -521,28 +707,8 @@
 
       setActiveTurnPoints(routeType);
 
-      // Remove keyboard navigation
-      // document.addEventListener('keydown', onKeyMove); // REMOVE THIS LINE
-
-      // Start watching GPS position
-      if ("geolocation" in navigator) {
-        geoWatchId = navigator.geolocation.watchPosition(
-          pos => {
-            const lat = pos.coords.latitude;
-            const lon = pos.coords.longitude;
-            updateUserLocation(lat, lon);
-            map.panTo([lat, lon]);
-            checkNearbyObjects([lat, lon], geojsonData);
-            checkHardcodedTurns([lat, lon]);
-          },
-          err => {
-            console.error("GPS error:", err);
-          },
-          { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
-        );
-      } else {
-        alert("Geolocatie wordt niet ondersteund door deze browser.");
-      }
+      // Keyboard navigation
+      document.addEventListener('keydown', onKeyMove);
 
       // Initial check
       lastSpokenTime = Date.now();
@@ -552,15 +718,40 @@
       // Start weather check interval
       if (window.weatherInterval) clearInterval(window.weatherInterval);
       window.weatherInterval = setInterval(speakWeatherIfQuiet, 1000);
+
+      // --- Opening sentence after 5 seconds ---
+      blockDirectionsUntil = Date.now() + 5000; // Block directions for 5s after opening
+      lastObjectAnnounceTime = Date.now(); // Block objects for 5s after opening
+      setTimeout(() => {
+        speak("Hallo, ik ben Gerard. Vandaag loop ik gezellig met je mee. Ik laat je weten waneer we een afslag moeten nemen om weer terug bij het Klooster te komen. Heb je zin om een stukje te wandelen?");
+        // Block directions for the duration of the opening sentence (estimate 7s)
+        blockDirectionsUntil = Date.now() + 7000;
+        lastObjectAnnounceTime = Date.now();
+      }, 5000);
     }
 
-    // Remove the onKeyMove function entirely (or leave it unused)
+    function onKeyMove(e) {
+      const moveStep = 0.00002;
+      previousUserPosition = [...userPosition]; // Save before updating
+      switch (e.key) {
+        case 'ArrowUp': userPosition[0] += moveStep; break;
+        case 'ArrowDown': userPosition[0] -= moveStep; break;
+        case 'ArrowLeft': userPosition[1] -= moveStep; break;
+        case 'ArrowRight': userPosition[1] += moveStep; break;
+        default: return;
+      }
+      updateUserLocation(userPosition[0], userPosition[1]);
+      map.panTo([userPosition[0], userPosition[1]]);
+      checkNearbyObjects(userPosition, geojsonData);
+      checkHardcodedTurns(userPosition);
+      checkOffRoute(userPosition, routeCoords);
+    }
 
     // End screen HTML
     const endScreenHtml = `
       <div id="endScreen" class="center-screen" style="display:none;">
-        <div style="font-size:2em; margin-bottom:1em;">Dankjewel dat je met mij wilde lopen.<br>Wat was het weer een fijne wandeling!</div>
-        <button class="start-btn" onclick="restartWalk()">Ik wil nog een wandeling maken</button>
+        <div class="welcome-title" style="margin-bottom: 0.7em;">Wat een fijne wandeling, tot de volgende!</div>
+        <button class="start-btn" onclick="restartWalk()" style="margin-top: 0;">Nog een rondje</button>
       </div>
     `;
     document.body.insertAdjacentHTML('beforeend', endScreenHtml);
@@ -583,6 +774,8 @@
       lastSpokenTime = Date.now();
       lastWeatherAnnounceTime = 0;
       weatherSentenceSpoken = false; // Reset here
+      directionCount = 0;
+      encouragementGiven = false;
 
       announcedTypes.clear();
       if (geojsonData && geojsonData.length > 0) {
@@ -608,16 +801,49 @@
         map.remove();
         map = null;
       }
-
-      // Stop GPS watcher if running
-      if (geoWatchId !== null && "geolocation" in navigator) {
-        navigator.geolocation.clearWatch(geoWatchId);
-        geoWatchId = null;
-      }
     }
+
+    function getDynamicTurnInstruction(userCoords, previousCoords, routeCoords) {
+  // Find closest route index
+  let minDist = Infinity, idx = 0;
+  for (let i = 0; i < routeCoords.length; i++) {
+    const dist = turf.distance(
+      turf.point([userCoords[1], userCoords[0]]),
+      turf.point([routeCoords[i][0], routeCoords[i][1]]),
+      { units: 'meters' }
+    );
+    if (dist < minDist) {
+      minDist = dist;
+      idx = i;
+    }
+  }
+  if (idx < routeCoords.length - 1 && previousCoords) {
+    // User's heading
+    const userHeading = turf.bearing(
+      turf.point([previousCoords[1], previousCoords[0]]),
+      turf.point([userCoords[1], userCoords[0]])
+    );
+    // Route's heading
+    const routeHeading = turf.bearing(
+      turf.point([userCoords[1], userCoords[0]]),
+      turf.point([routeCoords[idx + 1][0], routeCoords[idx + 1][1]])
+    );
+    // Difference
+    let diff = routeHeading - userHeading;
+    // Normalize to [-180, 180]
+    while (diff > 180) diff -= 360;
+    while (diff < -180) diff += 360;
+    if (diff > 45) return "rechts";
+    if (diff < -45) return "links";
+    return "rechtdoor";
+  }
+  return null;
+}
   </script>
 </body>
 </html>
+
+
 
 
 
