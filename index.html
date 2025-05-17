@@ -159,7 +159,7 @@
 
       // Speak the opening sentence immediately after the user taps a route button
       speak("Hallo, ik ben Gerard. Vandaag loop ik gezellig met je mee. Ik laat je weten waneer we een afslag moeten nemen om weer terug bij het Klooster te komen. Heb je zin om een stukje te wandelen?");
-      blockDirectionsUntil = Date.now() + 7000; // Block directions for the duration of the opening sentence (estimate 7s)
+      blockDirectionsUntil = Date.now() + 12000; // Block directions for the duration of the opening sentence (estimate 7s)
       lastObjectAnnounceTime = Date.now();
 
       startSimulation(type);
@@ -316,8 +316,8 @@
     async function speakWeatherIfQuiet() {
       const now = Date.now();
       if (!weatherData) return;
-      // --- Remove this line to allow weather at any time ---
-      // if (directionCount < 2) return;
+      // Only speak weather if at least 2 directions have been given
+      if (directionCount < 2) return;
       // Only if nothing spoken for 10s, and not just after weather, and only once
       if (!weatherSentenceSpoken && now - lastSpokenTime > 10000 && now - lastWeatherAnnounceTime > 10000) {
         const zin = getWeatherSentence(weatherData);
