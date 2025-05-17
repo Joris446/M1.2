@@ -156,6 +156,12 @@
     function selectRoute(type) {
       document.getElementById('routeScreen').style.display = 'none';
       document.getElementById('map').style.display = 'block';
+
+      // Speak the opening sentence immediately after the user taps a route button
+      speak("Hallo, ik ben Gerard. Vandaag loop ik gezellig met je mee. Ik laat je weten waneer we een afslag moeten nemen om weer terug bij het Klooster te komen. Heb je zin om een stukje te wandelen?");
+      blockDirectionsUntil = Date.now() + 7000; // Block directions for the duration of the opening sentence (estimate 7s)
+      lastObjectAnnounceTime = Date.now();
+
       startSimulation(type);
     }
 
@@ -719,10 +725,15 @@
       if (window.weatherInterval) clearInterval(window.weatherInterval);
       window.weatherInterval = setInterval(speakWeatherIfQuiet, 1000);
 
-      // --- Opening sentence: play immediately, block directions for 7s ---
-      speak("Hallo, ik ben Gerard. Vandaag loop ik gezellig met je mee. Ik laat je weten waneer we een afslag moeten nemen om weer terug bij het Klooster te komen. Heb je zin om een stukje te wandelen?");
-      blockDirectionsUntil = Date.now() + 7000; // Block directions for the duration of the opening sentence (estimate 7s)
-      lastObjectAnnounceTime = Date.now();
+      // --- Opening sentence after 5 seconds ---
+      blockDirectionsUntil = Date.now() + 5000; // Block directions for 5s after opening
+      lastObjectAnnounceTime = Date.now(); // Block objects for 5s after opening
+      setTimeout(() => {
+        speak("Hallo, ik ben Gerard. Vandaag loop ik gezellig met je mee. Ik laat je weten waneer we een afslag moeten nemen om weer terug bij het Klooster te komen. Heb je zin om een stukje te wandelen?");
+        // Block directions for the duration of the opening sentence (estimate 7s)
+        blockDirectionsUntil = Date.now() + 7000;
+        lastObjectAnnounceTime = Date.now();
+      }, 5000);
     }
 
     function onKeyMove(e) {
