@@ -1077,7 +1077,7 @@ function checkOffRoute(userCoords, routeCoords) {
   }
   // Second warning at >40m
   if (minDist > 40 && offRouteWarned !== "second") {
-    speak("Laten we omkerren en weer de juiste kant opgaan.");
+    speak("Laten we omkeren en weer de juiste kant opgaan.");
     offRouteWarned = "second";
     blockDirectionsUntil = Date.now() + 4000;
     lastObjectAnnounceTime = Date.now();
