@@ -190,7 +190,7 @@
     let previousUserPosition = null;
 
     // Direction and encouragement state
-    let directionCount = 0;
+    let directionCount = 0; // telt het aantal gegeven navigatie-aanwijzingen
     let encouragementGiven = false;
 
     // 🗣️ Vooraf ingestelde zinnen per objecttype
@@ -209,9 +209,9 @@
     };
 
     // --- Timing constants (in ms) ---
-const DIRECTION_MIN_INTERVAL = 6000;      // 6 seconds after any message
-const AFTER_DIRECTION_BLOCK = 30000;      // 30 seconds block after direction for other messages
-const OBJECT_WEATHER_REASSURE_MIN = 90000; // 90 seconds between object/weather/reassure messages
+const DIRECTION_MIN_INTERVAL = 5000;      // 6 seconds after any message
+const AFTER_DIRECTION_BLOCK = 13000;      // 30 seconds block after direction for other messages
+const OBJECT_WEATHER_REASSURE_MIN = 60000; // 90 seconds between object/weather/reassure messages
 
 // --- Track last times ---
 let lastAnySpokenTime = 0;         // Last time anything was spoken
@@ -225,8 +225,8 @@ function speak(text, type = "other") {
   if (type === "object" || type === "weather" || type === "reassure") lastObjectWeatherReassureTime = Date.now();
 
   const utterance = new SpeechSynthesisUtterance(text);
- speechSynthesis.speak(utterance);
- // speakWithElevenLabs(text); // gebruik nu ElevenLabs i.p.v. SpeechSynthesis
+  speechSynthesis.speak(utterance);
+  //speakWithElevenLabs(text); // gebruik nu ElevenLabs i.p.v. SpeechSynthesis
   if (map) {
     const popup = L.popup()
       .setLatLng([userPosition[0], userPosition[1]])
@@ -239,9 +239,11 @@ function speak(text, type = "other") {
 // --- Adjusted checkNearbyObjects ---
 function checkNearbyObjects(userCoords, features) {
   const now = Date.now();
-  // Only allow object announcement if:
-  // - 30s after last direction
-  // - 90s after last object/weather/reassure
+  // --- NIEUW: Wacht tot er minstens 2 directies zijn gegeven ---
+  if (directionCount < 2) return;
+  // Alleen toestaan als:
+  // - 30s na laatste direction
+  // - 90s na laatste object/weather/reassure
   if (now - lastDirectionSpokenTime < AFTER_DIRECTION_BLOCK) return;
   if (now - lastObjectWeatherReassureTime < OBJECT_WEATHER_REASSURE_MIN) return;
 
@@ -330,26 +332,53 @@ function checkHardcodedTurns(userCoords) {
   }
 
   // Announce normal turns first
-  for (const turn of normalTurns) {
+  for (let i = 0; i < normalTurns.length; i++) {
+    const turn = normalTurns[i];
     if (turn.announced) continue;
     const dist = turf.distance(
       turf.point([userCoords[1], userCoords[0]]),
       turf.point([turn.lng, turn.lat]),
       { units: 'meters' }
     );
-    if (dist < 9) {
+
+    // Specifieke check: de laatste "rechtdoor" op (51.387083, 5.443449) mag pas na 5 directies
+    if (
+      turn.dir === "rechtdoor" &&
+      Math.abs(turn.lat - 51.387083) < 0.00002 &&
+      Math.abs(turn.lng - 5.443449) < 0.00002 &&
+      directionCount < 5
+    ) {
+      continue; // Wacht tot er 5 directies zijn gegeven
+    }
+
+    // Prevent announcing a turn if a previous turn at the same coordinate is not yet announced
+    let earlierUnannouncedAtSameSpot = false;
+    for (let j = 0; j < i; j++) {
+      const prevTurn = normalTurns[j];
+      if (
+        !prevTurn.announced &&
+        Math.abs(prevTurn.lat - turn.lat) < 0.00001 &&
+        Math.abs(prevTurn.lng - turn.lng) < 0.00001
+      ) {
+        earlierUnannouncedAtSameSpot = true;
+        break;
+      }
+    }
+    if (earlierUnannouncedAtSameSpot) continue;
+
+    if (dist < 12) {
       speak(getTurnSentence(turn.dir), "direction");
       turn.announced = true;
       lastDirectionAnnounceTime = Date.now();
       directionCount++;
-      // After 4 directions, trigger encouragement if not yet given, but wait 20s
-      if (directionCount === 4 && !encouragementGiven) {
+      // After 5 directions, trigger encouragement if not yet given, but wait 20s
+      if (directionCount === 5 && !encouragementGiven) {
         setTimeout(() => {
           speak("Je bent goed bezig. Het is zo belangrijk om in beweging te blijven.", "reassure");
           encouragementGiven = true;
           blockDirectionsUntil = Date.now() + 5000; // Block directions for 5s
           lastObjectAnnounceTime = Date.now(); // Block objects for 5s
-        }, 20000); // Wait 20s after 4th direction
+        }, 20000); // Wait 20s after 5th direction
       }
       blockDirectionsUntil = Date.now() + 5000; // Block directions for 5s
       lastObjectAnnounceTime = Date.now(); // Block objects for 5s
@@ -364,7 +393,7 @@ function checkHardcodedTurns(userCoords) {
       turf.point([lastRechts.lng, lastRechts.lat]),
       { units: 'meters' }
     );
-    if (dist < 8) {
+    if (dist < 12) {
       speak(getTurnSentence(lastRechts.dir), "direction");
       lastRechts.announced = true;
       lastDirectionAnnounceTime = Date.now();
@@ -480,7 +509,7 @@ function checkHardcodedTurns(userCoords) {
       const isCloudy = main.includes("cloud") || desc.includes("bewolkt") || desc.includes("wolken");
 
       if (isRaining) {
-        return "Wat goed dat je met dit natte weer een wandelingetje gaat maken zeg! Zo goed om even de benen te strekken.";
+        return "Wat goed dat je met dit mindere weer een wandelingetje gaat maken zeg! Zo goed om even de benen te strekken.";
       }
       if (isSunny && temp > 22) {
         return "Pfoee, wat een lekker warm weertje vandaag he?";
@@ -495,7 +524,7 @@ function checkHardcodedTurns(userCoords) {
         return "Fris weertje vandaag hè? Goed om toch even naar buiten te gaan!";
       }
       if (isCloudy && temp > 10) {
-        return "Ook zonder zon is het fijn om even een frisse neus te halen!";
+        return "Ook zonder zon is het fijn om even een frisse neus te halen, goed bezig!";
       }
       return null;
     }
@@ -590,34 +619,13 @@ function checkHardcodedTurns(userCoords) {
       currentMarker = L.marker([lat, lon], { icon }).addTo(map);
     }
 
-    // Replace arrow key simulation with GPS tracking
-function startGpsTracking() {
-  if (navigator.geolocation) {
-    navigator.geolocation.watchPosition(
-      pos => {
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
-        updateUserLocation(lat, lon);
-        map.panTo([lat, lon]);
-        checkNearbyObjects([lat, lon], geojsonData);
-        checkHardcodedTurns([lat, lon]);
-        checkOffRoute([lat, lon], routeCoords);
-      },
-      err => {
-        console.error("GPS error:", err);
-      },
-      { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
-    );
-  } else {
-    alert("GPS niet ondersteund op dit apparaat.");
-  }
-}
-
     function checkNearbyObjects(userCoords, features) {
       const now = Date.now();
-      // Only allow object announcement if:
-      // - 30s after last direction
-      // - 90s after last object/weather/reassure
+      // --- NIEUW: Wacht tot er minstens 2 directies zijn gegeven ---
+      if (directionCount < 2) return;
+      // Alleen toestaan als:
+      // - 30s na laatste direction
+      // - 90s na laatste object/weather/reassure
       if (now - lastDirectionSpokenTime < AFTER_DIRECTION_BLOCK) return;
       if (now - lastObjectWeatherReassureTime < OBJECT_WEATHER_REASSURE_MIN) return;
 
@@ -684,26 +692,53 @@ function startGpsTracking() {
       }
 
       // Announce normal turns first
-      for (const turn of normalTurns) {
+      for (let i = 0; i < normalTurns.length; i++) {
+        const turn = normalTurns[i];
         if (turn.announced) continue;
         const dist = turf.distance(
           turf.point([userCoords[1], userCoords[0]]),
           turf.point([turn.lng, turn.lat]),
           { units: 'meters' }
         );
-        if (dist < 9) {
+
+        // Specifieke check: de laatste "rechtdoor" op (51.387083, 5.443449) mag pas na 5 directies
+        if (
+          turn.dir === "rechtdoor" &&
+          Math.abs(turn.lat - 51.387083) < 0.00002 &&
+          Math.abs(turn.lng - 5.443449) < 0.00002 &&
+          directionCount < 5
+        ) {
+          continue; // Wacht tot er 5 directies zijn gegeven
+        }
+
+        // Prevent announcing a turn if a previous turn at the same coordinate is not yet announced
+        let earlierUnannouncedAtSameSpot = false;
+        for (let j = 0; j < i; j++) {
+          const prevTurn = normalTurns[j];
+          if (
+            !prevTurn.announced &&
+            Math.abs(prevTurn.lat - turn.lat) < 0.00001 &&
+            Math.abs(prevTurn.lng - turn.lng) < 0.00001
+          ) {
+            earlierUnannouncedAtSameSpot = true;
+            break;
+          }
+        }
+        if (earlierUnannouncedAtSameSpot) continue;
+
+        if (dist < 12) {
           speak(getTurnSentence(turn.dir), "direction");
           turn.announced = true;
           lastDirectionAnnounceTime = Date.now();
           directionCount++;
-          // After 4 directions, trigger encouragement if not yet given, but wait 20s
-          if (directionCount === 4 && !encouragementGiven) {
+          // After 5 directions, trigger encouragement if not yet given, but wait 20s
+          if (directionCount === 5 && !encouragementGiven) {
             setTimeout(() => {
               speak("Je bent goed bezig. Het is zo belangrijk om in beweging te blijven.", "reassure");
               encouragementGiven = true;
               blockDirectionsUntil = Date.now() + 5000; // Block directions for 5s
               lastObjectAnnounceTime = Date.now(); // Block objects for 5s
-            }, 20000); // Wait 20s after 4th direction
+            }, 20000); // Wait 20s after 5th direction
           }
           blockDirectionsUntil = Date.now() + 5000; // Block directions for 5s
           lastObjectAnnounceTime = Date.now(); // Block objects for 5s
@@ -718,7 +753,7 @@ function startGpsTracking() {
           turf.point([lastRechts.lng, lastRechts.lat]),
           { units: 'meters' }
         );
-        if (dist < 8) {
+        if (dist < 12) {
           speak(getTurnSentence(lastRechts.dir), "direction");
           lastRechts.announced = true;
           lastDirectionAnnounceTime = Date.now();
@@ -796,19 +831,19 @@ function startGpsTracking() {
     // Fill in the coordinates and directions for your routes!
     const turnPointsByRoute = {
       kort: [
-        { lat: 51.387518, lng: 5.443264, dir: "rechts" },
+        { lat: 51.387348, lng: 5.443318, dir: "rechts" },
         { lat: 51.387714, lng: 5.443246, dir: "links" },
         { lat: 51.387627, lng: 5.441539, dir: "links" },
         { lat: 51.387028, lng: 5.441920, dir: "rechtdoor" },
         { lat: 51.386585, lng: 5.443084, dir: "links" },
         { lat: 51.386609, lng: 5.443492, dir: "links" },
         { lat: 51.387121, lng: 5.443417, dir: "rechtdoor" },
-        { lat: 51.387481, lng: 5.443403, dir: "rechts" },
-        { lat: 51.387536, lng: 5.443614, dir: "Weer terug" },
+        { lat: 51.387348, lng: 5.443318, dir: "rechts" },
+        { lat: 51.387405, lng: 5.443736, dir: "Weer terug" },
 
       ],
       middel: [
-        { lat: 51.387518, lng: 5.443264, dir: "links" },
+        { lat: 51.387348, lng: 5.443318, dir: "links" },
         { lat: 51.387088, lng: 5.443431, dir: "links" },
           { lat: 51.387303, lng: 5.444765, dir: "rechtdoor" },
          { lat: 51.387494, lng: 5.445949, dir: "rechts" },
@@ -820,11 +855,11 @@ function startGpsTracking() {
            { lat: 51.386168, lng: 5.444415, dir: "plein" },
            { lat: 51.386405, lng: 5.443573, dir: "rechts" },
             { lat: 51.387083, lng: 5.443449, dir: "rechtdoor" },
-             { lat: 51.387481, lng: 5.443403, dir: "rechts" },
-        { lat: 51.387536, lng: 5.443614, dir: "Weer terug" },
+             { lat: 51.387348, lng: 5.443318, dir: "rechts" },
+        { lat: 51.387405, lng: 5.443736, dir: "Weer terug" },
       ],
       lang: [
-        { lat: 51.387518, lng: 5.443264, dir: "rechts" },
+        { lat: 51.387348, lng: 5.443318, dir: "rechts" },
         { lat: 51.387714, lng: 5.443246, dir: "links" },
         { lat: 51.387627, lng: 5.441539, dir: "rechtdoor" },
           { lat: 51.387604, lng: 5.440893, dir: "rechtdoor" },
@@ -842,8 +877,8 @@ function startGpsTracking() {
         { lat: 51.386585, lng: 5.443084, dir: "links" },
         { lat: 51.386609, lng: 5.443492, dir: "links" },
         { lat: 51.387121, lng: 5.443417, dir: "rechtdoor" },
-        { lat: 51.387501, lng: 5.443296, dir: "rechts" },
-        { lat: 51.387536, lng: 5.443614, dir: "Weer terug" },
+        { lat: 51.387348, lng: 5.443318, dir: "rechts" },
+        { lat: 51.387405, lng: 5.443736, dir: "Weer terug" },
       ]
     };
 
@@ -891,7 +926,7 @@ function startGpsTracking() {
       setActiveTurnPoints(routeType);
 
       // Keyboard navigation
-      startGpsTracking();
+      document.addEventListener('keydown', onKeyMove);
 
       // Initial check
       lastSpokenTime = Date.now();
@@ -1015,9 +1050,51 @@ function startGpsTracking() {
   }
   return null;
 }
+
+function checkOffRoute(userCoords, routeCoords) {
+  if (!routeCoords || routeCoords.length === 0) return;
+
+  // Create a LineString from the route coordinates
+  const line = turf.lineString(routeCoords);
+
+  // User's current position as a Point
+  const userPoint = turf.point([userCoords[1], userCoords[0]]);
+
+  // Calculate the shortest distance from the user to the route line (in meters)
+  const minDist = turf.pointToLineDistance(userPoint, line, { units: 'meters' });
+
+  // First warning at >20m
+  if (minDist > 20 && minDist <= 40 && !offRouteWarned) {
+    speak("Oh, we moeten even omkeren om op de juiste route te komen. Dan zitten we weer goed.");
+    offRouteWarned = true;
+    blockDirectionsUntil = Date.now() + 4000;
+    lastObjectAnnounceTime = Date.now();
+  }
+  // Second warning at >40m
+  if (minDist > 40 && offRouteWarned !== "second") {
+    speak("Laten we omkeren en weer de juiste kant opgaan.");
+    offRouteWarned = "second";
+    blockDirectionsUntil = Date.now() + 4000;
+    lastObjectAnnounceTime = Date.now();
+  }
+  // Reset warning if user is back on route
+  if (minDist <= 10 && offRouteWarned) {
+    offRouteWarned = false;
+    // Announce dynamic direction to next point
+    const dir = getDynamicTurnInstruction(userCoords, previousUserPosition, routeCoords);
+    if (dir) {
+      if (dir === "rechts") speak("We zijn weer op de route. Hier gaan we naar rechts.");
+      else if (dir === "links") speak("We zijn weer op de route. Hier gaan we naar links.");
+      else speak("We zijn weer op de route. Hier gaan we rechtdoor.");
+    } else {
+      speak("We zijn weer op de route.");
+    }
+  }
+}
   </script>
 </body>
 </html>
+
 
 
 
