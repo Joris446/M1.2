@@ -158,10 +158,11 @@
       document.getElementById('routeScreen').style.display = 'none';
       document.getElementById('map').style.display = 'block';
 
-      // Speak the opening sentence immediately after the user taps a route button
+      unlockAudio(); // <--- Unlock audio context for iOS/Safari
+
       speak("Hallo, ik ben Gerard. Vandaag loop ik gezellig met je mee. Ik laat je weten waneer we een afslag moeten nemen om weer terug bij het Klooster te komen. Heb je zin om een stukje te wandelen?");
       openingMessageTime = Date.now();
-      blockDirectionsUntil = openingMessageTime + 10000; // Block directions for 10s after opening
+      blockDirectionsUntil = openingMessageTime + 10000;
       lastObjectAnnounceTime = Date.now();
 
       startSimulation(type);
@@ -1094,6 +1095,19 @@ function checkOffRoute(userCoords, routeCoords) {
     } else {
       speak("We zijn weer op de route.");
     }
+  }
+}
+  </script>
+  <script>
+let audioUnlocked = false;
+function unlockAudio() {
+  if (!audioUnlocked) {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const source = ctx.createBufferSource();
+    source.buffer = ctx.createBuffer(1, 1, 22050);
+    source.connect(ctx.destination);
+    source.start(0);
+    audioUnlocked = true;
   }
 }
   </script>
