@@ -159,7 +159,7 @@
       document.getElementById('map').style.display = 'block';
 
       // Spreek de openingszin direct uit na het kiezen van de route (géén vertraging)
-      speak("Hallo, ik ben Gerard. Vandaag loop ik gezellig met je mee. Ik laat je weten waneer we een afslag moeten nemen om weer terug bij het Klooster te komen. Heb je zin om een stukje te wandelen?");
+      speak("Hallo, ik ben Gerardus. Vandaag loop ik gezellig met je mee. Ik laat je weten waneer we een afslag moeten nemen om weer terug bij het Klooster te komen. Heb je zin om een stukje te wandelen?");
       openingMessageTime = Date.now();
       blockDirectionsUntil = openingMessageTime + 10000; // Block directions for 10s after opening
       lastObjectAnnounceTime = Date.now();
@@ -225,8 +225,8 @@ function speak(text, type = "other") {
   if (type === "object" || type === "weather" || type === "reassure") lastObjectWeatherReassureTime = Date.now();
 
   const utterance = new SpeechSynthesisUtterance(text);
-  speechSynthesis.speak(utterance);
-  //speakWithElevenLabs(text); // gebruik nu ElevenLabs i.p.v. SpeechSynthesis
+ // speechSynthesis.speak(utterance);
+  speakWithElevenLabs(utterance); // gebruik nu ElevenLabs i.p.v. SpeechSynthesis
   if (map) {
     const popup = L.popup()
       .setLatLng([userPosition[0], userPosition[1]])
