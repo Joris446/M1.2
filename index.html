@@ -225,8 +225,8 @@ function speak(text, type = "other") {
   if (type === "object" || type === "weather" || type === "reassure") lastObjectWeatherReassureTime = Date.now();
 
   const utterance = new SpeechSynthesisUtterance(text);
-  //speechSynthesis.speak(utterance);
-  speakWithElevenLabs(text); // gebruik nu ElevenLabs i.p.v. SpeechSynthesis
+  speechSynthesis.speak(utterance);
+  //speakWithElevenLabs(text); // gebruik nu ElevenLabs i.p.v. SpeechSynthesis
   if (map) {
     const popup = L.popup()
       .setLatLng([userPosition[0], userPosition[1]])
@@ -925,8 +925,8 @@ function checkHardcodedTurns(userCoords) {
 
       setActiveTurnPoints(routeType);
 
-      // Start GPS tracking in plaats van toetsenbordnavigatie
-      startGpsTracking();
+      // Keyboard navigation
+      document.addEventListener('keydown', onKeyMove);
 
       // Initial check
       lastSpokenTime = Date.now();
@@ -941,27 +941,22 @@ function checkHardcodedTurns(userCoords) {
       // (No speak or setTimeout for "Hallo, ik ben Gerard..." here)
     }
 
-    function startGpsTracking() {
-  if (navigator.geolocation) {
-    navigator.geolocation.watchPosition(
-      pos => {
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
-        updateUserLocation(lat, lon);
-        map.panTo([lat, lon]);
-        checkNearbyObjects([lat, lon], geojsonData);
-        checkHardcodedTurns([lat, lon]);
-        checkOffRoute([lat, lon], routeCoords);
-      },
-      err => {
-        console.error("GPS error:", err);
-      },
-      { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
-    );
-  } else {
-    alert("GPS niet ondersteund op dit apparaat.");
-  }
-}
+    function onKeyMove(e) {
+      const moveStep = 0.00002;
+      previousUserPosition = [...userPosition]; // Save before updating
+      switch (e.key) {
+        case 'ArrowUp': userPosition[0] += moveStep; break;
+        case 'ArrowDown': userPosition[0] -= moveStep; break;
+        case 'ArrowLeft': userPosition[1] -= moveStep; break;
+        case 'ArrowRight': userPosition[1] += moveStep; break;
+        default: return;
+      }
+      updateUserLocation(userPosition[0], userPosition[1]);
+      map.panTo([userPosition[0], userPosition[1]]);
+      checkNearbyObjects(userPosition, geojsonData);
+      checkHardcodedTurns(userPosition);
+      checkOffRoute(userPosition, routeCoords);
+    }
 
     // End screen HTML
     const endScreenHtml = `
@@ -1099,6 +1094,7 @@ function checkOffRoute(userCoords, routeCoords) {
   </script>
 </body>
 </html>
+
 
 
 
