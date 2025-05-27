@@ -158,11 +158,11 @@
       document.getElementById('routeScreen').style.display = 'none';
       document.getElementById('map').style.display = 'block';
 
-      unlockAudio(); // <--- Unlock audio context for iOS/Safari
+      unlockAudio();
 
       speak("Hallo, ik ben Gerardus. Vandaag loop ik gezellig met je mee. Ik laat je weten waneer we een afslag moeten nemen om weer terug bij het Klooster te komen. Heb je zin om een stukje te wandelen?");
       openingMessageTime = Date.now();
-      blockDirectionsUntil = openingMessageTime + 10000;
+      blockDirectionsUntil = openingMessageTime + 3000; // Only block for 3 seconds
       lastObjectAnnounceTime = Date.now();
 
       startSimulation(type);
@@ -247,6 +247,7 @@ function checkNearbyObjects(userCoords, features) {
   // - 90s na laatste object/weather/reassure
   if (now - lastDirectionSpokenTime < AFTER_DIRECTION_BLOCK) return;
   if (now - lastObjectWeatherReassureTime < OBJECT_WEATHER_REASSURE_MIN) return;
+  if (openingMessageTime && now - openingMessageTime < 3000) return; // Only block for 3s after opening
 
   for (const feature of features) {
     if (!feature.geometry || !Array.isArray(feature.geometry.coordinates)) continue;
@@ -319,6 +320,7 @@ function checkHardcodedTurns(userCoords) {
   // Only allow direction if 6s after last direction (for safety)
   if (now - lastDirectionSpokenTime < DIRECTION_MIN_INTERVAL) return;
   if (now < blockDirectionsUntil) return;
+  if (openingMessageTime && now - openingMessageTime < 3000) return; // Only block for 3s after opening
 
   const normalTurns = activeTurnPoints.slice(0, -2);
   const lastRechts = activeTurnPoints[activeTurnPoints.length - 2];
@@ -629,6 +631,7 @@ function checkHardcodedTurns(userCoords) {
       // - 90s na laatste object/weather/reassure
       if (now - lastDirectionSpokenTime < AFTER_DIRECTION_BLOCK) return;
       if (now - lastObjectWeatherReassureTime < OBJECT_WEATHER_REASSURE_MIN) return;
+      if (openingMessageTime && now - openingMessageTime < 3000) return; // Only block for 3s after opening
 
       for (const feature of features) {
         if (!feature.geometry || !Array.isArray(feature.geometry.coordinates)) continue;
@@ -679,6 +682,7 @@ function checkHardcodedTurns(userCoords) {
       // Only allow direction if 6s after last direction (for safety)
       if (now - lastDirectionSpokenTime < DIRECTION_MIN_INTERVAL) return;
       if (now < blockDirectionsUntil) return;
+      if (openingMessageTime && now - openingMessageTime < 3000) return; // Only block for 3s after opening
 
       const normalTurns = activeTurnPoints.slice(0, -2);
       const lastRechts = activeTurnPoints[activeTurnPoints.length - 2];
@@ -687,7 +691,7 @@ function checkHardcodedTurns(userCoords) {
       function getTurnSentence(dir) {
         if (dir === "rechts") return "Laten we hier rechtsaf slaan.";
         if (dir === "links") return "Hier gaan we naar links.";
-        if (dir === "rechtdoor") return "Hier blijven we rechtdoor gaan.";
+        if (dir === "rechtdoor") return "Hier blijven we rechtdoor.";
         if (dir === "plein") return "Laten we hier rechtsaf het plein op gaan en langs de kerk lopen";
         return `Hier moet je naar ${dir}`;
       }
