@@ -159,7 +159,7 @@
       document.getElementById('map').style.display = 'block';
 
       // Speak the opening sentence immediately after the user taps a route button
-      speak("Hallo, ik ben Koen. Vandaag loop ik gezellig met je mee. Ik laat je weten waneer we een afslag moeten nemen om weer terug bij het Klooster te komen. Heb je zin om een stukje te wandelen?");
+      speak("Hallo, ik ben Gerard. Vandaag loop ik gezellig met je mee. Ik laat je weten waneer we een afslag moeten nemen om weer terug bij het Klooster te komen. Heb je zin om een stukje te wandelen?");
       openingMessageTime = Date.now();
       blockDirectionsUntil = openingMessageTime + 10000; // Block directions for 10s after opening
       lastObjectAnnounceTime = Date.now();
@@ -225,8 +225,8 @@ function speak(text, type = "other") {
   if (type === "object" || type === "weather" || type === "reassure") lastObjectWeatherReassureTime = Date.now();
 
   const utterance = new SpeechSynthesisUtterance(text);
-//  speechSynthesis.speak(utterance);
-  speakWithElevenLabs(text); // gebruik nu ElevenLabs i.p.v. SpeechSynthesis
+  speechSynthesis.speak(utterance);
+  //speakWithElevenLabs(text); // gebruik nu ElevenLabs i.p.v. SpeechSynthesis
   if (map) {
     const popup = L.popup()
       .setLatLng([userPosition[0], userPosition[1]])
@@ -619,10 +619,12 @@ function checkHardcodedTurns(userCoords) {
       currentMarker = L.marker([lat, lon], { icon }).addTo(map);
     }
 
-    // Voeg deze functie toe, bijvoorbeeld bovenaan je script:
+    // Zorg dat startGpsTracking maar één keer gestart wordt en geen dubbele markers maakt:
+let gpsWatchId = null;
 function startGpsTracking() {
+  if (gpsWatchId !== null) return; // al gestart
   if (navigator.geolocation) {
-    navigator.geolocation.watchPosition(
+    gpsWatchId = navigator.geolocation.watchPosition(
       pos => {
         const lat = pos.coords.latitude;
         const lon = pos.coords.longitude;
@@ -639,6 +641,14 @@ function startGpsTracking() {
     );
   } else {
     alert("GPS niet ondersteund op dit apparaat.");
+  }
+}
+
+// Stop GPS-tracking bij einde wandeling of herstart:
+function stopGpsTracking() {
+  if (gpsWatchId !== null) {
+    navigator.geolocation.clearWatch(gpsWatchId);
+    gpsWatchId = null;
   }
 }
 
@@ -685,9 +695,7 @@ async function startSimulation(routeType) {
   window.weatherInterval = setInterval(speakWeatherIfQuiet, 1000);
 }
 
-// ...rest of your code...
-
-    // End screen HTML
+// End screen HTML
     const endScreenHtml = `
       <div id="endScreen" class="center-screen" style="display:none;">
         <div class="welcome-title" style="margin-bottom: 0.7em;">Wat een fijne wandeling, tot de volgende!</div>
@@ -700,6 +708,7 @@ async function startSimulation(routeType) {
       document.getElementById('map').style.display = 'none';
       document.getElementById('endScreen').style.display = 'flex';
       if (window.weatherInterval) clearInterval(window.weatherInterval);
+      stopGpsTracking();
     }
 
     function restartWalk() {
@@ -713,7 +722,7 @@ async function startSimulation(routeType) {
       currentRouteIndex = 0;
       lastSpokenTime = Date.now();
       lastWeatherAnnounceTime = 0;
-      weatherSentenceSpoken = false; // Reset here
+      weatherSentenceSpoken = false;
       directionCount = 0;
       encouragementGiven = false;
 
@@ -741,6 +750,7 @@ async function startSimulation(routeType) {
         map.remove();
         map = null;
       }
+      stopGpsTracking();
     }
 
     function getDynamicTurnInstruction(userCoords, previousCoords, routeCoords) {
