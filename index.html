@@ -226,7 +226,7 @@ function speak(text, type = "other") {
 
   const utterance = new SpeechSynthesisUtterance(text);
  // speechSynthesis.speak(utterance);
-  speakWithElevenLabs(utterance); // gebruik nu ElevenLabs i.p.v. SpeechSynthesis
+  speakWithElevenLabs(text); // gebruik nu ElevenLabs i.p.v. SpeechSynthesis
   if (map) {
     const popup = L.popup()
       .setLatLng([userPosition[0], userPosition[1]])
