@@ -225,8 +225,8 @@ function speak(text, type = "other") {
   if (type === "object" || type === "weather" || type === "reassure") lastObjectWeatherReassureTime = Date.now();
 
   const utterance = new SpeechSynthesisUtterance(text);
-  speechSynthesis.speak(utterance);
-  //speakWithElevenLabs(text); // gebruik nu ElevenLabs i.p.v. SpeechSynthesis
+  //speechSynthesis.speak(utterance);
+  speakWithElevenLabs(text); // gebruik nu ElevenLabs i.p.v. SpeechSynthesis
   if (map) {
     const popup = L.popup()
       .setLatLng([userPosition[0], userPosition[1]])
