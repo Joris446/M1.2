@@ -159,7 +159,7 @@
       document.getElementById('map').style.display = 'block';
 
       // Speak the opening sentence immediately after the user taps a route button
-      speak("Hallo, ik ben Tim. Vandaag loop ik gezellig met je mee. Ik laat je weten waneer we een afslag moeten nemen om weer terug bij het Klooster te komen. Heb je zin om een stukje te wandelen?");
+      speak("Hallo, ik ben Gerard. Vandaag loop ik gezellig met je mee. Ik laat je weten waneer we een afslag moeten nemen om weer terug bij het Klooster te komen. Heb je zin om een stukje te wandelen?");
       openingMessageTime = Date.now();
       blockDirectionsUntil = openingMessageTime + 10000; // Block directions for 10s after opening
       lastObjectAnnounceTime = Date.now();
@@ -225,7 +225,7 @@ function speak(text, type = "other") {
   if (type === "object" || type === "weather" || type === "reassure") lastObjectWeatherReassureTime = Date.now();
 
   const utterance = new SpeechSynthesisUtterance(text);
- // speechSynthesis.speak(utterance);
+//  speechSynthesis.speak(utterance);
   speakWithElevenLabs(text); // gebruik nu ElevenLabs i.p.v. SpeechSynthesis
   if (map) {
     const popup = L.popup()
@@ -644,70 +644,48 @@ function startGpsTracking() {
 
 // Pas startSimulation aan zodat GPS-tracking wordt gestart en pijltjestoetsen worden uitgeschakeld:
 async function startSimulation(routeType) {
-      // Fetch weather at the start of the walk
-      weatherData = await fetchWeather();
+  weatherData = await fetchWeather();
 
-      // Init map
-      map = L.map('map', { keyboard: false }).setView([51.3865, 5.4439], 17);
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+  map = L.map('map', { keyboard: false }).setView([51.3865, 5.4439], 17);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-      // Load route and objects
-      const waypoints = await loadRoute(routeType);
-      routeCoords = await fetchRealWorldRoute(waypoints);
+  const waypoints = await loadRoute(routeType);
+  routeCoords = await fetchRealWorldRoute(waypoints);
 
-      geojsonData = await loadObjects();
+  geojsonData = await loadObjects();
 
-      // Draw route
-      if (routeLine) map.removeLayer(routeLine);
-      routeLine = L.polyline(routeCoords.map(c => [c[1], c[0]]), {
-        color: "#e1a83e", // yellow highlight
-        weight: 6,
-        opacity: 0.95
-      }).addTo(map);
-      map.fitBounds(routeLine.getBounds());
+  if (routeLine) map.removeLayer(routeLine);
+  routeLine = L.polyline(routeCoords.map(c => [c[1], c[0]]), {
+    color: "#e1a83e",
+    weight: 6,
+    opacity: 0.95
+  }).addTo(map);
+  map.fitBounds(routeLine.getBounds());
 
-      // Place user at start
-      userPosition = [routeCoords[0][1], routeCoords[0][0]];
-      updateUserLocation(userPosition[0], userPosition[1]);
-      currentRouteIndex = 0;
-      lastTurnIdx = -1;
-      announcedTypes.clear();
-      geojsonData.forEach(f => { if (f.properties) f.properties.announced = false; });
+  userPosition = [routeCoords[0][1], routeCoords[0][0]];
+  updateUserLocation(userPosition[0], userPosition[1]);
+  currentRouteIndex = 0;
+  lastTurnIdx = -1;
+  announcedTypes.clear();
+  geojsonData.forEach(f => { if (f.properties) f.properties.announced = false; });
 
-      setActiveTurnPoints(routeType);
+  setActiveTurnPoints(routeType);
 
-      // Keyboard navigation
-      document.addEventListener('keydown', onKeyMove);
+  // Verwijder pijltjestoetsen
+  document.removeEventListener('keydown', onKeyMove);
 
-      // Initial check
-      lastSpokenTime = Date.now();
-      lastWeatherAnnounceTime = 0;
-      checkNearbyObjects(userPosition, geojsonData);
+  // Start GPS tracking
+  startGpsTracking();
 
-      // Start weather check interval
-      if (window.weatherInterval) clearInterval(window.weatherInterval);
-      window.weatherInterval = setInterval(speakWeatherIfQuiet, 1000);
+  lastSpokenTime = Date.now();
+  lastWeatherAnnounceTime = 0;
+  checkNearbyObjects(userPosition, geojsonData);
 
-      // --- Remove duplicate opening sentence here ---
-      // (No speak or setTimeout for "Hallo, ik ben Gerard..." here)
-    }
+  if (window.weatherInterval) clearInterval(window.weatherInterval);
+  window.weatherInterval = setInterval(speakWeatherIfQuiet, 1000);
+}
 
-    function onKeyMove(e) {
-      const moveStep = 0.00002;
-      previousUserPosition = [...userPosition]; // Save before updating
-      switch (e.key) {
-        case 'ArrowUp': userPosition[0] += moveStep; break;
-        case 'ArrowDown': userPosition[0] -= moveStep; break;
-        case 'ArrowLeft': userPosition[1] -= moveStep; break;
-        case 'ArrowRight': userPosition[1] += moveStep; break;
-        default: return;
-      }
-      updateUserLocation(userPosition[0], userPosition[1]);
-      map.panTo([userPosition[0], userPosition[1]]);
-      checkNearbyObjects(userPosition, geojsonData);
-      checkHardcodedTurns(userPosition);
-      checkOffRoute(userPosition, routeCoords);
-    }
+// ...rest of your code...
 
     // End screen HTML
     const endScreenHtml = `
