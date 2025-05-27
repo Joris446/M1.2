@@ -154,27 +154,17 @@
       document.getElementById('routeScreen').style.display = 'flex';
     }
     let openingMessageTime = 0; // Track when the opening message was spoken
-    let openingMessageSpoken = false; // Add this variable to track if the opening message was spoken
     function selectRoute(type) {
       document.getElementById('routeScreen').style.display = 'none';
       document.getElementById('map').style.display = 'block';
 
-      unlockAudio();
+      // Speak the opening sentence immediately after the user taps a route button
+      speak("Hallo, ik ben Gerard. Vandaag loop ik gezellig met je mee. Ik laat je weten waneer we een afslag moeten nemen om weer terug bij het Klooster te komen. Heb je zin om een stukje te wandelen?");
+      openingMessageTime = Date.now();
+      blockDirectionsUntil = openingMessageTime + 10000; // Block directions for 10s after opening
+      lastObjectAnnounceTime = Date.now();
 
-      // Gebruik SpeechSynthesis voor de openingszin (werkt altijd op iPhone)
-      const openingText = "Hallo, ik ben Gerard. Vandaag loop ik gezellig met je mee. Ik laat je weten waneer we een afslag moeten nemen om weer terug bij het Klooster te komen. Heb je zin om een stukje te wandelen?";
-      const utterance = new SpeechSynthesisUtterance(openingText);
-      utterance.lang = "nl-NL";
-      utterance.onend = () => {
-        openingMessageTime = Date.now();
-        blockDirectionsUntil = openingMessageTime + 1000; // Only block for 1s after opening
-        lastObjectAnnounceTime = Date.now();
-        openingMessageSpoken = true;
-        // Zeg direct de tweede zin zodra openingszin klaar is
-        speak("We gaan zo meteen beginnen. Loop rustig richting het eerste kruispunt.", "direction");
-        startSimulation(type);
-      };
-      speechSynthesis.speak(utterance);
+      startSimulation(type);
     }
 
     // --- Map and Data ---
@@ -234,15 +224,9 @@ function speak(text, type = "other") {
   if (type === "direction") lastDirectionSpokenTime = Date.now();
   if (type === "object" || type === "weather" || type === "reassure") lastObjectWeatherReassureTime = Date.now();
 
-  if (openingMessageSpoken) {
-    speakWithElevenLabs(text);
-  } else {
-    // Fallback voor openingszin of als openingszin nog bezig is
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "nl-NL";
-    speechSynthesis.speak(utterance);
-  }
-
+  const utterance = new SpeechSynthesisUtterance(text);
+  //speechSynthesis.speak(utterance);
+  speakWithElevenLabs(text); // gebruik nu ElevenLabs i.p.v. SpeechSynthesis
   if (map) {
     const popup = L.popup()
       .setLatLng([userPosition[0], userPosition[1]])
@@ -262,7 +246,6 @@ function checkNearbyObjects(userCoords, features) {
   // - 90s na laatste object/weather/reassure
   if (now - lastDirectionSpokenTime < AFTER_DIRECTION_BLOCK) return;
   if (now - lastObjectWeatherReassureTime < OBJECT_WEATHER_REASSURE_MIN) return;
-  if (openingMessageTime && now - openingMessageTime < 3000) return; // Only block for 3s after opening
 
   for (const feature of features) {
     if (!feature.geometry || !Array.isArray(feature.geometry.coordinates)) continue;
@@ -335,7 +318,6 @@ function checkHardcodedTurns(userCoords) {
   // Only allow direction if 6s after last direction (for safety)
   if (now - lastDirectionSpokenTime < DIRECTION_MIN_INTERVAL) return;
   if (now < blockDirectionsUntil) return;
-  if (openingMessageTime && now - openingMessageTime < 3000) return; // Only block for 3s after opening
 
   const normalTurns = activeTurnPoints.slice(0, -2);
   const lastRechts = activeTurnPoints[activeTurnPoints.length - 2];
@@ -646,7 +628,6 @@ function checkHardcodedTurns(userCoords) {
       // - 90s na laatste object/weather/reassure
       if (now - lastDirectionSpokenTime < AFTER_DIRECTION_BLOCK) return;
       if (now - lastObjectWeatherReassureTime < OBJECT_WEATHER_REASSURE_MIN) return;
-      if (openingMessageTime && now - openingMessageTime < 3000) return; // Only block for 3s after opening
 
       for (const feature of features) {
         if (!feature.geometry || !Array.isArray(feature.geometry.coordinates)) continue;
@@ -697,7 +678,6 @@ function checkHardcodedTurns(userCoords) {
       // Only allow direction if 6s after last direction (for safety)
       if (now - lastDirectionSpokenTime < DIRECTION_MIN_INTERVAL) return;
       if (now < blockDirectionsUntil) return;
-      if (openingMessageTime && now - openingMessageTime < 3000) return; // Only block for 3s after opening
 
       const normalTurns = activeTurnPoints.slice(0, -2);
       const lastRechts = activeTurnPoints[activeTurnPoints.length - 2];
@@ -706,7 +686,7 @@ function checkHardcodedTurns(userCoords) {
       function getTurnSentence(dir) {
         if (dir === "rechts") return "Laten we hier rechtsaf slaan.";
         if (dir === "links") return "Hier gaan we naar links.";
-        if (dir === "rechtdoor") return "Hier blijven we rechtdoor.";
+        if (dir === "rechtdoor") return "Hier blijven we rechtdoor gaan.";
         if (dir === "plein") return "Laten we hier rechtsaf het plein op gaan en langs de kerk lopen";
         return `Hier moet je naar ${dir}`;
       }
@@ -1114,19 +1094,6 @@ function checkOffRoute(userCoords, routeCoords) {
     } else {
       speak("We zijn weer op de route.");
     }
-  }
-}
-  </script>
-  <script>
-let audioUnlocked = false;
-function unlockAudio() {
-  if (!audioUnlocked) {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const source = ctx.createBufferSource();
-    source.buffer = ctx.createBuffer(1, 1, 22050);
-    source.connect(ctx.destination);
-    source.start(0);
-    audioUnlocked = true;
   }
 }
   </script>
