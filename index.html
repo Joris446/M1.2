@@ -158,7 +158,7 @@
       document.getElementById('routeScreen').style.display = 'none';
       document.getElementById('map').style.display = 'block';
 
-      // Speak the opening sentence immediately after the user taps a route button
+      // Spreek de openingszin direct uit na het kiezen van de route (géén vertraging)
       speak("Hallo, ik ben Gerard. Vandaag loop ik gezellig met je mee. Ik laat je weten waneer we een afslag moeten nemen om weer terug bij het Klooster te komen. Heb je zin om een stukje te wandelen?");
       openingMessageTime = Date.now();
       blockDirectionsUntil = openingMessageTime + 10000; // Block directions for 10s after opening
@@ -619,12 +619,331 @@ function checkHardcodedTurns(userCoords) {
       currentMarker = L.marker([lat, lon], { icon }).addTo(map);
     }
 
-    // Zorg dat startGpsTracking maar één keer gestart wordt en geen dubbele markers maakt:
-let gpsWatchId = null;
-function startGpsTracking() {
-  if (gpsWatchId !== null) return; // al gestart
+    function checkNearbyObjects(userCoords, features) {
+      const now = Date.now();
+      // --- NIEUW: Wacht tot er minstens 2 directies zijn gegeven ---
+      if (directionCount < 2) return;
+      // Alleen toestaan als:
+      // - 30s na laatste direction
+      // - 90s na laatste object/weather/reassure
+      if (now - lastDirectionSpokenTime < AFTER_DIRECTION_BLOCK) return;
+      if (now - lastObjectWeatherReassureTime < OBJECT_WEATHER_REASSURE_MIN) return;
+
+      for (const feature of features) {
+        if (!feature.geometry || !Array.isArray(feature.geometry.coordinates)) continue;
+        let objectCoords;
+        if (feature.geometry.type === 'Point') {
+          objectCoords = feature.geometry.coordinates;
+        } else if (feature.geometry.type === 'Polygon') {
+          const centroid = turf.centroid(feature.geometry).geometry.coordinates;
+          objectCoords = centroid;
+        } else continue;
+        if (typeof objectCoords[0] !== 'number' || typeof objectCoords[1] !== 'number') continue;
+
+        // Bepaal het type en de juiste afstandsgrens
+        let type = feature.properties?.type || feature.properties?.["plus-type"] || "onbekend";
+        if (typeof type !== "string") type = "onbekend";
+        type = type.toLowerCase();
+        const distanceThreshold = (type === "kerk") ? 45 : 15;
+
+        const distance = turf.distance(
+          turf.point([userCoords[1], userCoords[0]]),
+          turf.point([objectCoords[0], objectCoords[1]]),
+          { units: 'meters' }
+        );
+        if (distance < distanceThreshold && !feature.properties.announced) {
+          feature.properties.announced = true;
+          if (announcedTypes.has(type)) continue;
+          announcedTypes.add(type);
+
+          // Special handling for kerk: include the name if available
+          if (type === "kerk") {
+            const kerkNaam = feature.properties.name ? feature.properties.name : "de kerk";
+            speak(`Hier zie je ${kerkNaam}, een bijzonder gebouw in het dorp.`, "object");
+          } else {
+            const zin = objectZinnen[type] || "Je komt langs een onbekend object.";
+            speak(zin, "object");
+          }
+          lastObjectAnnounceTime = Date.now();
+          blockDirectionsUntil = Date.now() + 3000;
+          return;
+        }
+      }
+    }
+
+    function checkHardcodedTurns(userCoords) {
+      const now = Date.now();
+      // Only allow direction if 6s after any message
+      if (now - lastAnySpokenTime < DIRECTION_MIN_INTERVAL) return;
+      // Only allow direction if 6s after last direction (for safety)
+      if (now - lastDirectionSpokenTime < DIRECTION_MIN_INTERVAL) return;
+      if (now < blockDirectionsUntil) return;
+
+      const normalTurns = activeTurnPoints.slice(0, -2);
+      const lastRechts = activeTurnPoints[activeTurnPoints.length - 2];
+      const weerTerug = activeTurnPoints[activeTurnPoints.length - 1];
+
+      function getTurnSentence(dir) {
+        if (dir === "rechts") return "Laten we hier rechtsaf slaan.";
+        if (dir === "links") return "Hier gaan we naar links.";
+        if (dir === "rechtdoor") return "Hier blijven we rechtdoor gaan.";
+        if (dir === "plein") return "Laten we hier rechtsaf het plein op gaan en langs de kerk lopen";
+        return `Hier moet je naar ${dir}`;
+      }
+
+      // Announce normal turns first
+      for (let i = 0; i < normalTurns.length; i++) {
+        const turn = normalTurns[i];
+        if (turn.announced) continue;
+        const dist = turf.distance(
+          turf.point([userCoords[1], userCoords[0]]),
+          turf.point([turn.lng, turn.lat]),
+          { units: 'meters' }
+        );
+
+        // Specifieke check: de laatste "rechtdoor" op (51.387083, 5.443449) mag pas na 5 directies
+        if (
+          turn.dir === "rechtdoor" &&
+          Math.abs(turn.lat - 51.387083) < 0.00002 &&
+          Math.abs(turn.lng - 5.443449) < 0.00002 &&
+          directionCount < 5
+        ) {
+          continue; // Wacht tot er 5 directies zijn gegeven
+        }
+
+        // Prevent announcing a turn if a previous turn at the same coordinate is not yet announced
+        let earlierUnannouncedAtSameSpot = false;
+        for (let j = 0; j < i; j++) {
+          const prevTurn = normalTurns[j];
+          if (
+            !prevTurn.announced &&
+            Math.abs(prevTurn.lat - turn.lat) < 0.00001 &&
+            Math.abs(prevTurn.lng - turn.lng) < 0.00001
+          ) {
+            earlierUnannouncedAtSameSpot = true;
+            break;
+          }
+        }
+        if (earlierUnannouncedAtSameSpot) continue;
+
+        if (dist < 12) {
+          speak(getTurnSentence(turn.dir), "direction");
+          turn.announced = true;
+          lastDirectionAnnounceTime = Date.now();
+          directionCount++;
+          // After 5 directions, trigger encouragement if not yet given, but wait 20s
+          if (directionCount === 5 && !encouragementGiven) {
+            setTimeout(() => {
+              speak("Je bent goed bezig. Het is zo belangrijk om in beweging te blijven.", "reassure");
+              encouragementGiven = true;
+              blockDirectionsUntil = Date.now() + 5000; // Block directions for 5s
+              lastObjectAnnounceTime = Date.now(); // Block objects for 5s
+            }, 20000); // Wait 20s after 5th direction
+          }
+          blockDirectionsUntil = Date.now() + 5000; // Block directions for 5s
+          lastObjectAnnounceTime = Date.now(); // Block objects for 5s
+          return;
+        }
+      }
+
+      // Only announce the last "rechts" if all previous are announced
+      if (normalTurns.every(t => t.announced) && lastRechts && !lastRechts.announced) {
+        const dist = turf.distance(
+          turf.point([userCoords[1], userCoords[0]]),
+          turf.point([lastRechts.lng, lastRechts.lat]),
+          { units: 'meters' }
+        );
+        if (dist < 12) {
+          speak(getTurnSentence(lastRechts.dir), "direction");
+          lastRechts.announced = true;
+          lastDirectionAnnounceTime = Date.now();
+          directionCount++;
+          if (directionCount === 4 && !encouragementGiven) {
+            setTimeout(() => {
+              speak("Je bent goed bezig. Het is zo belangrijk om in beweging te blijven.", "reassure");
+              encouragementGiven = true;
+              blockDirectionsUntil = Date.now() + 5000;
+              lastObjectAnnounceTime = Date.now();
+            }, 20000); // Wait 20s after 4th direction
+          }
+          blockDirectionsUntil = Date.now() + 5000;
+          lastObjectAnnounceTime = Date.now();
+          return;
+        }
+      }
+
+      // Only announce "Weer terug" if all previous are announced
+      if (
+        normalTurns.every(t => t.announced) &&
+        lastRechts && lastRechts.announced &&
+        weerTerug && !weerTerug.announced
+      ) {
+        const dist = turf.distance(
+          turf.point([userCoords[1], userCoords[0]]),
+          turf.point([weerTerug.lng, weerTerug.lat]),
+          { units: 'meters' }
+        );
+        if (dist < 8) {
+          speak("En daar zijn we weer terug bij het klooster. Voor je zie je de voordeur. Wat fijn om zo samen op pad te zijn geweest.", "direction");
+          weerTerug.announced = true;
+          lastDirectionAnnounceTime = Date.now();
+          showEndScreen();
+          return;
+        }
+      }
+    }
+
+    // --- Route Guidance ---
+    function getNextRouteIndex(pos, coords, currentIdx) {
+      // Find the closest next point on the route
+      let minDist = Infinity, idx = currentIdx;
+      for (let i = currentIdx; i < coords.length; i++) {
+        const dist = turf.distance(
+          turf.point([pos[1], pos[0]]),
+          turf.point([coords[i][0], coords[i][1]]),
+          { units: 'meters' }
+        );
+        if (dist < minDist) {
+          minDist = dist;
+          idx = i;
+        }
+      }
+      return idx;
+    }
+
+    let lastTurnIdx = -1;
+    function checkRouteGuidance(pos, coords) {
+      // Find closest point on route
+      const idx = getNextRouteIndex(pos, coords, currentRouteIndex);
+      if (idx > currentRouteIndex) currentRouteIndex = idx;
+      // Check if a turn is coming up
+      if (idx > 0 && idx < coords.length - 1 && idx !== lastTurnIdx) {
+        const prev = coords[idx - 1], curr = coords[idx], next = coords[idx + 1];
+        const turn = getTurnInstruction(prev, curr, next);
+        if (turn) {
+          speak(`Hier moet je naar ${turn}`);
+          lastTurnIdx = idx;
+        }
+      }
+    }
+
+    // --- Hardcoded turn points for each route type ---
+    // Fill in the coordinates and directions for your routes!
+    const turnPointsByRoute = {
+      kort: [
+        { lat: 51.387348, lng: 5.443318, dir: "rechts" },
+        { lat: 51.387714, lng: 5.443246, dir: "links" },
+        { lat: 51.387627, lng: 5.441539, dir: "links" },
+        { lat: 51.387028, lng: 5.441920, dir: "rechtdoor" },
+        { lat: 51.386585, lng: 5.443084, dir: "links" },
+        { lat: 51.386609, lng: 5.443492, dir: "links" },
+        { lat: 51.387121, lng: 5.443417, dir: "rechtdoor" },
+        { lat: 51.387348, lng: 5.443318, dir: "rechts" },
+        { lat: 51.387405, lng: 5.443736, dir: "Weer terug" },
+
+      ],
+      middel: [
+        { lat: 51.387348, lng: 5.443318, dir: "links" },
+        { lat: 51.387088, lng: 5.443431, dir: "links" },
+          { lat: 51.387303, lng: 5.444765, dir: "rechtdoor" },
+         { lat: 51.387494, lng: 5.445949, dir: "rechts" },
+          { lat: 51.387212, lng: 5.446041, dir: "rechts" },
+           { lat: 51.387142, lng: 5.445778, dir: "links" },
+           { lat: 51.386524, lng: 5.446117, dir: "rechts" },
+          { lat: 51.386390, lng: 5.445628, dir: "rechtdoor" },
+           { lat: 51.386243, lng: 5.444643, dir: "rechtdoor" },
+           { lat: 51.386168, lng: 5.444415, dir: "plein" },
+           { lat: 51.386405, lng: 5.443573, dir: "rechts" },
+            { lat: 51.387083, lng: 5.443449, dir: "rechtdoor" },
+             { lat: 51.387348, lng: 5.443318, dir: "rechts" },
+        { lat: 51.387405, lng: 5.443736, dir: "Weer terug" },
+      ],
+      lang: [
+        { lat: 51.387348, lng: 5.443318, dir: "rechts" },
+        { lat: 51.387714, lng: 5.443246, dir: "links" },
+        { lat: 51.387627, lng: 5.441539, dir: "rechtdoor" },
+          { lat: 51.387604, lng: 5.440893, dir: "rechtdoor" },
+        { lat: 51.387821, lng: 5.439224, dir: "links" },
+        { lat: 51.387288, lng: 5.439156, dir: "rechts" },
+           { lat: 51.387023, lng: 5.437679, dir: "links" },
+        { lat: 51.386938, lng: 5.437711, dir: "rechtdoor" },
+        { lat: 51.386385, lng: 5.437822, dir: "rechtdoor" },
+             { lat: 51.385760, lng: 5.438039, dir: "links" },
+        { lat: 51.385849, lng: 5.438430, dir: "rechtdoor" },
+        { lat: 51.386117, lng: 5.439493, dir: "rechtdoor" },
+              { lat: 51.386412, lng: 5.441286, dir: "links" },
+        { lat: 51.386877, lng: 5.441175, dir: "rechts" },
+        { lat: 51.387028, lng: 5.441920, dir: "rechts" },
+        { lat: 51.386585, lng: 5.443084, dir: "links" },
+        { lat: 51.386609, lng: 5.443492, dir: "links" },
+        { lat: 51.387121, lng: 5.443417, dir: "rechtdoor" },
+        { lat: 51.387348, lng: 5.443318, dir: "rechts" },
+        { lat: 51.387405, lng: 5.443736, dir: "Weer terug" },
+      ]
+    };
+
+    let activeTurnPoints = [];
+
+    function setActiveTurnPoints(routeType) {
+      activeTurnPoints = (turnPointsByRoute[routeType] || []).map(tp => ({
+        ...tp,
+        announced: false
+      }));
+    }
+
+    // --- Main Simulation ---
+    async function startSimulation(routeType) {
+      // Fetch weather at the start of the walk
+      weatherData = await fetchWeather();
+
+      // Init map
+      map = L.map('map', { keyboard: false }).setView([51.3865, 5.4439], 17);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+      // Load route and objects
+      const waypoints = await loadRoute(routeType);
+      routeCoords = await fetchRealWorldRoute(waypoints);
+
+      geojsonData = await loadObjects();
+
+      // Draw route
+      if (routeLine) map.removeLayer(routeLine);
+      routeLine = L.polyline(routeCoords.map(c => [c[1], c[0]]), {
+        color: "#e1a83e", // yellow highlight
+        weight: 6,
+        opacity: 0.95
+      }).addTo(map);
+      map.fitBounds(routeLine.getBounds());
+
+      // Place user at start
+      userPosition = [routeCoords[0][1], routeCoords[0][0]];
+      updateUserLocation(userPosition[0], userPosition[1]);
+      currentRouteIndex = 0;
+      lastTurnIdx = -1;
+      announcedTypes.clear();
+      geojsonData.forEach(f => { if (f.properties) f.properties.announced = false; });
+
+      setActiveTurnPoints(routeType);
+
+      // Start GPS tracking in plaats van toetsenbordnavigatie
+      startGpsTracking();
+
+      // Initial check
+      lastSpokenTime = Date.now();
+      lastWeatherAnnounceTime = 0;
+      checkNearbyObjects(userPosition, geojsonData);
+
+      // Start weather check interval
+      if (window.weatherInterval) clearInterval(window.weatherInterval);
+      window.weatherInterval = setInterval(speakWeatherIfQuiet, 1000);
+
+      // --- Remove duplicate opening sentence here ---
+      // (No speak or setTimeout for "Hallo, ik ben Gerard..." here)
+    }
+
+    function startGpsTracking() {
   if (navigator.geolocation) {
-    gpsWatchId = navigator.geolocation.watchPosition(
+    navigator.geolocation.watchPosition(
       pos => {
         const lat = pos.coords.latitude;
         const lon = pos.coords.longitude;
@@ -644,58 +963,7 @@ function startGpsTracking() {
   }
 }
 
-// Stop GPS-tracking bij einde wandeling of herstart:
-function stopGpsTracking() {
-  if (gpsWatchId !== null) {
-    navigator.geolocation.clearWatch(gpsWatchId);
-    gpsWatchId = null;
-  }
-}
-
-// Pas startSimulation aan zodat GPS-tracking wordt gestart en pijltjestoetsen worden uitgeschakeld:
-async function startSimulation(routeType) {
-  weatherData = await fetchWeather();
-
-  map = L.map('map', { keyboard: false }).setView([51.3865, 5.4439], 17);
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-  const waypoints = await loadRoute(routeType);
-  routeCoords = await fetchRealWorldRoute(waypoints);
-
-  geojsonData = await loadObjects();
-
-  if (routeLine) map.removeLayer(routeLine);
-  routeLine = L.polyline(routeCoords.map(c => [c[1], c[0]]), {
-    color: "#e1a83e",
-    weight: 6,
-    opacity: 0.95
-  }).addTo(map);
-  map.fitBounds(routeLine.getBounds());
-
-  userPosition = [routeCoords[0][1], routeCoords[0][0]];
-  updateUserLocation(userPosition[0], userPosition[1]);
-  currentRouteIndex = 0;
-  lastTurnIdx = -1;
-  announcedTypes.clear();
-  geojsonData.forEach(f => { if (f.properties) f.properties.announced = false; });
-
-  setActiveTurnPoints(routeType);
-
-  // Verwijder pijltjestoetsen
-  document.removeEventListener('keydown', onKeyMove);
-
-  // Start GPS tracking
-  startGpsTracking();
-
-  lastSpokenTime = Date.now();
-  lastWeatherAnnounceTime = 0;
-  checkNearbyObjects(userPosition, geojsonData);
-
-  if (window.weatherInterval) clearInterval(window.weatherInterval);
-  window.weatherInterval = setInterval(speakWeatherIfQuiet, 1000);
-}
-
-// End screen HTML
+    // End screen HTML
     const endScreenHtml = `
       <div id="endScreen" class="center-screen" style="display:none;">
         <div class="welcome-title" style="margin-bottom: 0.7em;">Wat een fijne wandeling, tot de volgende!</div>
@@ -708,7 +976,6 @@ async function startSimulation(routeType) {
       document.getElementById('map').style.display = 'none';
       document.getElementById('endScreen').style.display = 'flex';
       if (window.weatherInterval) clearInterval(window.weatherInterval);
-      stopGpsTracking();
     }
 
     function restartWalk() {
@@ -722,7 +989,7 @@ async function startSimulation(routeType) {
       currentRouteIndex = 0;
       lastSpokenTime = Date.now();
       lastWeatherAnnounceTime = 0;
-      weatherSentenceSpoken = false;
+      weatherSentenceSpoken = false; // Reset here
       directionCount = 0;
       encouragementGiven = false;
 
@@ -750,7 +1017,6 @@ async function startSimulation(routeType) {
         map.remove();
         map = null;
       }
-      stopGpsTracking();
     }
 
     function getDynamicTurnInstruction(userCoords, previousCoords, routeCoords) {
@@ -833,7 +1099,6 @@ function checkOffRoute(userCoords, routeCoords) {
   </script>
 </body>
 </html>
-
 
 
 
